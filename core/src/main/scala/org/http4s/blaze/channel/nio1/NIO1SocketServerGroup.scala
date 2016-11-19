@@ -24,6 +24,8 @@ object NIO1SocketServerGroup {
   /** Default size of buffer to use in a [[SelectorLoop]] */
   val defaultBufferSize: Int = 64*1024
 
+  private val cachedZeroBuffer = Success(BufferTools.emptyBuffer)
+
   def apply(pool: SelectorLoopPool): NIO1SocketServerGroup =
     new NIO1SocketServerGroup(pool)
 
@@ -199,7 +201,8 @@ class NIO1SocketServerGroup(pool: SelectorLoopPool) extends ServerChannelGroup {
       try {
         scratch.clear()
         val bytes = ch.read(scratch)
-        if (bytes >= 0) {
+        if (bytes == 0) NIO1SocketServerGroup.cachedZeroBuffer
+        else if (bytes > 0) {
           scratch.flip()
 
           val b = ByteBuffer.allocate(scratch.remaining())
